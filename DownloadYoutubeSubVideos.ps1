@@ -105,7 +105,6 @@ if ($youtubeFolder[$youtubeFolder.Length - 1] -ne "/") {
 #youtube downloader options
 $options = " -o `"$youtubeFolder%(uploader)s/%(title)s.%(ext)s`" -f 22 "
 
-#    $options = ' -o "h:/youtube/%(uploader)s/%(title)s.%(ext)s" -f 22 '
 foreach ($url in $MySubs)
 {
   try {
@@ -115,27 +114,28 @@ foreach ($url in $MySubs)
     [xml]$Content = Get-Content "$temp\test.xml"
     $Feed = $Content.feed.entry
     foreach ($msg in $Feed) {
-      #--get-filename Simulate, quiet but print output filename
       $getFilenameArgs = " --get-filename -f 22 " + $msg.group.content.url
       $ytFilename = (cmd /c ($exe + $getFilenameArgs) 2`>`&1)
+      $Matches = $null
+      $regexRemoveAllAfterLastDash = "(?!.*-).*"
+      $ytFilename -match $regexRemoveAllAfterLastDash | Out-Null
+      if ($Matches.Count -gt 0)
+      {
+        $ytFilename = $ytFilename.Replace(("-" + $Matches[0]),"")
+      }
       $ytFilename = $ytFilename.Substring(0,$ytFilename.Length - 4)
-      if ($ytFilename -gt 6) {
-        $ytFilename = $ytFilename.Substring(0,$ytFilename.Length - 6)
-        if ($ytFilename.Length -gt 30)
-        {
-          $ytFilename = $ytFilename.Substring(0,30)
-        }
+      if ($ytFilename.Length -gt 24)
+      {
+        $ytFilename = $ytFilename.Substring(0,24)
       }
       if (Get-ChildItem -Recurse ($downloadFolder + $ytFilename + "*"))
       {
-        Write-Host File exists.
-
+        Write-Host File exists,skipping download.
       } else {
         $argList = $options + $msg.group.content.url
         Write-Host Downloading $msg.group.content.url
         Start-Process -FilePath $exe -ArgumentList $argList -Wait -NoNewWindow
       }
-      #Start-Sleep 5
     } #EndForEach
   } #EndTry
 
