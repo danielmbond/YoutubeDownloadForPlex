@@ -25,6 +25,7 @@ function TestMakeFolder ($thePath) {
     }
   }
 }
+
 function MatchGoodFilename ($filename) {
   $regex = '((?:.*[sS][0-9][0-9][eE][0-9][0-9]*))'
   if ($filename -match $regex) {
@@ -33,39 +34,45 @@ function MatchGoodFilename ($filename) {
     return $false
   }
 }
+
+fuction AddLeadingZero ($inputNumber) {
+  if ($inputNumber -lt 10) { #add a leading zero if the season number is less than 10
+    $inputNumber = "0$inputNumber"
+  }
+  return $inputNumber
+}
+
 #function to move and rename youtube videos
 function MoveFiles ($inputpath) {
   $youtubeBaseFolder = $inputpath
   $youtubeFolders = Get-ChildItem $youtubeBaseFolder -Recurse | ? { $_.PSIsContainer } | Select-Object FullName
-  #$regex = '((?:.*[sS][0-9][0-9][eE][0-9][0-9]*))'
+
   for ($i = 0; $i -lt $youtubeFolders.Count; $i++) {
-    $youtubeFolders[$i] >> ytlog.log
     $shows = Get-ChildItem $youtubeFolders[$i].FullName
     $shows = $shows | Sort-Object -Property LastWriteTime
     $season = "";
     $episode = "";
+
     for ($j = 0; $j -lt $shows.Count; $j++) {
-      #$shows[$j].FullName + "S$season"
-      if (!(MatchGoodFilename $shows[$j].FullName)) {
-        $seasonNum = [math]::truncate(($j + 1) / 20) + 1
-        if ($seasonNum -lt 10) {
-          $season = "0$seasonNum"
-        } else {
-          $season = $seasonNum
-        }
-        if ($j + 1 -lt 10) {
-          $episode = "0" + ($j + 1)
-        } else {
-          $episode = ($j + 1)
-        }
+
+      if (!(MatchGoodFilename $shows[$j].FullName)) { #see if the file is already formated SxxExx
+        $seasonNum = [math]::truncate(($j + 1) / 20) + 1 #increase the season number in increments of 20
+
+        $season = AddLeadingZero $seasonNum
+        $episode = AddLeadingZero ($j + 1)
+
         $basename = $shows[$j].BaseName
+
+        #limit filenames to 30 characters
         if ($basename.Length -gt 30) {
           $basename = $basename.Substring(0,29).Trim()
         }
+
+        #put filenames in the format Episode SxxExx
         $fullname = $shows[1].DirectoryName + "\" + $basename + " S" + $season + "E" + $episode + $shows[$j].Extension
-        if (!(Test-Path $fullname))
-        {
-          $fullname >> ytlog.log
+
+        if (!(Test-Path $fullname)) {
+          $fullname >> ($env:TEMP + "\ytlog.log")
           $shows[$j].MoveTo($fullname)
         }
       }
@@ -97,7 +104,7 @@ if (!(Test-Path $exe)) {
   }
 }
 
-$youtubeFolder = $downloadFolder.Replace("\","/")
+$youtubeFolder = $downloadFolder.Replace("\","/") #youtube-dl.exe doesn't like backslashes
 if ($youtubeFolder[$youtubeFolder.Length - 1] -ne "/") {
   $youtubeFolder = $youtubeFolder + "/"
 }
@@ -119,17 +126,18 @@ foreach ($url in $MySubs)
       $Matches = $null
       $regexRemoveAllAfterLastDash = "(?!.*-).*"
       $ytFilename -match $regexRemoveAllAfterLastDash | Out-Null
-      if ($Matches.Count -gt 0)
-      {
+
+      if ($Matches.Count -gt 0) {
         $ytFilename = $ytFilename.Replace(("-" + $Matches[0]),"")
       }
-      $ytFilename = $ytFilename.Substring(0,$ytFilename.Length - 4)
-      if ($ytFilename.Length -gt 24)
-      {
-        $ytFilename = $ytFilename.Substring(0,24)
+
+      $ytFilename = $ytFilename.Substring(0,$ytFilename.Length - 4) #remove filename extension
+
+      if ($ytFilename.Length -gt 24) {
+        $ytFilename = $ytFilename.Substring(0,24) #reduce the filename to 24 characters max
       }
-      if (Get-ChildItem -Recurse ($downloadFolder + $ytFilename + "*"))
-      {
+
+      if (Get-ChildItem -Recurse ($downloadFolder + $ytFilename + "*")) { #search for existing files and about download if found
         Write-Host File exists,skipping download.
       } else {
         $argList = $options + $msg.group.content.url
