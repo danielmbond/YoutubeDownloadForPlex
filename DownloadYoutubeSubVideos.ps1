@@ -4,11 +4,12 @@ $downloadFolder = "H:\youtube\" #Path to downloaded youtube videos to
 $exe = "$env:APPDATA\ytdownload\youtube-dl.exe" # http://youtube-dl.org/downloads/latest/youtube-dl.exe
 
 #To get the subscription addresses subscribe to the youtube channel and go to https://www.youtube.com/subscription_manager?action_takeout=1
-$MySubs = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCOaMOXfe8EWH1GJyhqhXrAA',`
-   'https://www.youtube.com/feeds/videos.xml?channel_id=UCS5Oz6CHmeoF7vSad0qqXfw',`
-   'https://www.youtube.com/feeds/videos.xml?channel_id=UChGJGhZ9SOOHvBB0Y4DOO_w',`
-   'https://www.youtube.com/feeds/videos.xml?channel_id=UCelMeixAOTs2OQAAi9wU8-g',`
-   'https://www.youtube.com/feeds/videos.xml?channel_id=UCzTnzmwTgd-06-JJZNgBJBQ'
+$MySubs = `
+   'https://www.youtube.com/feeds/videos.xml?channel_id=UCS5Oz6CHmeoF7vSad0qqXfw',#DanTDM
+   'https://www.youtube.com/feeds/videos.xml?channel_id=UChGJGhZ9SOOHvBB0Y4DOO_w',#Ryan ToysReview
+   'https://www.youtube.com/feeds/videos.xml?channel_id=UCelMeixAOTs2OQAAi9wU8-g',#CookieSwirlC
+   'https://www.youtube.com/feeds/videos.xml?channel_id=UCzTnzmwTgd-06-JJZNgBJBQ' #Freak World / Annabelle and Victoria
+   #'https://www.youtube.com/feeds/videos.xml?channel_id=UCOaMOXfe8EWH1GJyhqhXrAA'  #Denis / Roblox
 
 $plexScan = 'C:\PROGRA~2\Plex\PLEXME~1\PLEXME~2.EXE'
 
@@ -35,7 +36,7 @@ function MatchGoodFilename ($filename) {
   }
 }
 
-fuction AddLeadingZero ($inputNumber) {
+function AddLeadingZero ($inputNumber) {
   if ($inputNumber -lt 10) { #add a leading zero if the season number is less than 10
     $inputNumber = "0$inputNumber"
   }
@@ -130,8 +131,6 @@ foreach ($url in $MySubs)
       if ($Matches.Count -gt 0) {
         $ytFilename = $ytFilename.Replace(("-" + $Matches[0]),"")
       }
-
-      $ytFilename = $ytFilename.Substring(0,$ytFilename.Length - 4) #remove filename extension
 
       if ($ytFilename.Length -gt 24) {
         $ytFilename = $ytFilename.Substring(0,24) #reduce the filename to 24 characters max
